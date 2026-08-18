@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Generator Tugu Jogja 3D - VoxelPress</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding:50px; background:#0a0e1a; color:#fff;">
+  <h2>VoxelPress 3D Sample Generator</h2>
+  <p>Klik tombol di bawah untuk mengunduh model 3D <strong>Tugu_Jogja_Sample.stl</strong></p>
+  <button id="btnDownload" style="padding:12px 24px; font-size:16px; background:#6366f1; color:#fff; border:none; border-radius:30px; cursor:pointer;">
+    Download File Tugu Jogja 3D (.stl)
+  </button>
+
+  <script>
+    document.getElementById('btnDownload').addEventListener('click', () => {
+      // 1. Membentuk Geometri Tugu Jogja (Alas, Badan Piramida, & Puncak Ornamen)
+      const group = new THREE.Group();
+
+      // Base / Landasan Tugu
+      const baseGeo = new THREE.BoxGeometry(20, 4, 20);
+      const baseMesh = new THREE.Mesh(baseGeo);
+      baseMesh.position.y = 2;
+      group.add(baseMesh);
+
+      // Badan Tugu (Piramida Terpancung)
+      const bodyGeo = new THREE.CylinderGeometry(4, 8, 40, 4);
+      const bodyMesh = new THREE.Mesh(bodyGeo);
+      bodyMesh.position.y = 24;
+      bodyMesh.rotation.y = Math.PI / 4;
+      group.add(bodyMesh);
+
+      // Puncak Tugu (Bulatan/Tabung Puncak)
+      const topGeo = new THREE.ConeGeometry(3, 12, 16);
+      const topMesh = new THREE.Mesh(topGeo);
+      topMesh.position.y = 50;
+      group.add(topMesh);
+
+      // 2. Export ke Format STL (Biner)
+      const exporter = new THREE.STLExporter();
+      const stlString = exporter.parse(group, { binary: true });
+
+      // 3. Trigger Download Otomatis
+      const blob = new Blob([stlString], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Tugu_Jogja_Sample.stl';
+      link.click();
+    });
+  </script>
+</body>
+</html>

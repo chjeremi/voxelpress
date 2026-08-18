@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Ketahanan Material 3D - VoxelPress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e1a;
+  --bg-2:#0d1220;
+  --ink:#ffffff;
+  --ink-2:rgba(255,255,255,.7);
+  --ink-3:rgba(255,255,255,.5);
+  --ink-4:rgba(255,255,255,.3);
+  --line:rgba(255,255,255,.1);
+  --line-2:rgba(255,255,255,.06);
+  --glass-bg:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  --glass-border:rgba(255,255,255,.1);
+  --glass-blur:blur(40px);
+  --indigo:#6366f1;
+  --indigo-soft:#a5b4fc;
+  --pink:#ec4899;
+  --pink-soft:#f9a8d4;
+  --cyan:#22d3ee;
+  --green:#4ade80;
+  --amber:#fbbf24;
+  --grad-a:linear-gradient(135deg,#fff 0%,#a5b4fc 50%,#ec4899 100%);
+  --grad-b:linear-gradient(135deg,#6366f1,#ec4899);
+  --font-sans:'Space Grotesk',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --r-lg:22px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;width:100%;background:var(--bg);color:var(--ink);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(circle at 15% 20%,rgba(99,102,241,.22) 0%,transparent 50%),
+             radial-gradient(circle at 85% 80%,rgba(236,72,153,.15) 0%,transparent 50%);
+  z-index:0;pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(ellipse at center,black 25%,transparent 80%);
+  z-index:0;pointer-events:none;
+}
+
+.header{
+  position:fixed;top:0;left:0;right:0;height:80px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;z-index:100;
+  background:rgba(10,14,26,0.8);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--line-2);
+}
+.brand{display:flex;align-items:center;gap:11px;font-weight:600;font-size:16px;text-decoration:none;color:#fff}
+.brand .logo{width:28px;height:28px;border-radius:8px;background:var(--grad-b);position:relative;flex-shrink:0}
+.brand .logo::after{content:'';position:absolute;inset:5px;background:var(--bg);border-radius:4px}
+.back-btn{
+  background:rgba(255,255,255,.06);color:var(--ink);
+  padding:10px 20px;border-radius:100px;font-family:var(--font-body);
+  font-size:13px;font-weight:500;text-decoration:none;
+  border:1px solid var(--glass-border);transition:all .3s;
+}
+.back-btn:hover{background:rgba(255,255,255,.12)}
+
+.main-wrapper{
+  min-height:100vh;padding:110px 6vmin 50px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;z-index:1;gap:20px;
+}
+
+.model-status-banner{
+  max-width:1200px;width:100%;padding:16px 24px;border-radius:16px;
+  background:rgba(255,255,255,.03);border:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:space-between;
+  backdrop-filter:blur(20px);
+}
+.model-info-left{display:flex;align-items:center;gap:12px}
+.model-icon{
+  width:36px;height:36px;border-radius:10px;background:rgba(99,102,241,.2);
+  color:var(--indigo-soft);display:grid;place-items:center;font-size:18px;
+}
+
+.sim-grid{
+  display:grid;grid-template-columns:1fr 1.1fr;
+  gap:4vmin;max-width:1200px;width:100%;align-items:start;
+}
+
+.glass-card{
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);
+  border-radius:var(--r-lg);padding:28px;
+  box-shadow:0 30px 60px rgba(0,0,0,.4);
+}
+
+.col-controls{display:flex;flex-direction:column;gap:16px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.3);
+  padding:6px 14px;border-radius:100px;font-family:var(--font-body);
+  font-size:12px;color:var(--cyan);width:fit-content;
+}
+.eyebrow .dt{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+
+.h-display{font-size:clamp(24px,3vw,38px);font-weight:500;line-height:1.15;letter-spacing:-.02em}
+.h-display .grd{background:var(--grad-a);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.param-group{display:flex;flex-direction:column;gap:6px}
+.param-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-body);font-size:13px;color:var(--ink-2);
+}
+.param-label span.val{font-family:var(--font-mono);color:var(--indigo-soft);font-weight:600}
+
+.param-slider{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+  background:rgba(255,255,255,.1);outline:none;
+}
+.param-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--indigo-soft);cursor:pointer;box-shadow:0 0 10px var(--indigo);
+}
+
+.select-material{
+  width:100%;padding:12px 16px;border-radius:12px;
+  background:rgba(10,14,26,.8);border:1px solid var(--glass-border);
+  color:var(--ink);font-family:var(--font-body);font-size:14px;outline:none;
+}
+
+.col-chart{display:flex;flex-direction:column;gap:16px;align-items:center}
+.chart-wrapper{width:100%;aspect-ratio:1/1;max-height:280px;position:relative;}
+
+.product-box-container{
+  width:100%;height:280px;border-radius:16px;
+  border:2px solid var(--glass-border);
+  position:relative;overflow:hidden;
+  transition:background 0.5s ease, border-color 0.5s ease;
+  background:rgba(10,14,26,0.9);
+  display:flex;align-items:center;justify-content:center;
+  cursor:grab;
+}
+.product-box-container:active{cursor:grabbing;}
+#productCanvas{width:100%;height:100%;display:block;}
+
+.box-tag{
+  position:absolute;top:10px;left:12px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--ink-3);
+  background:rgba(10,14,26,0.6);padding:4px 10px;border-radius:100px;
+  border:1px solid var(--line-2);pointer-events:none;z-index:10;
+}
+.hint-tag{
+  position:absolute;bottom:10px;right:12px;
+  font-family:var(--font-mono);font-size:10px;color:var(--cyan);
+  background:rgba(10,14,26,0.6);padding:4px 10px;border-radius:100px;
+  border:1px solid rgba(34,211,238,.3);pointer-events:none;z-index:10;
+}
+
+.btn-primary{
+  background:#fff;color:var(--bg);padding:14px 28px;border-radius:100px;
+  font-family:var(--font-body);font-size:14px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;border:none;text-decoration:none;transition:all .3s;width:100%;
+}
+.btn-primary:hover{
+  background:linear-gradient(135deg,var(--indigo-soft),#fff);
+  transform:translateY(-2px);box-shadow:0 10px 30px rgba(165,180,252,.25);
+}
+
+.warning-overlay{
+  position:fixed;inset:0;background:rgba(10,14,26,0.85);backdrop-filter:blur(15px);
+  z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.warning-card{
+  max-width:480px;width:100%;background:var(--bg-2);border:1px solid var(--pink);
+  border-radius:24px;padding:36px 28px;text-align:center;display:flex;
+  flex-direction:column;align-items:center;gap:16px;
+  box-shadow:0 20px 50px rgba(236,72,153,.2);
+}
+
+@media (max-width:900px){
+  .sim-grid{grid-template-columns:1fr;gap:24px}
+  .main-wrapper{padding:100px 18px 40px}
+  .model-status-banner{flex-direction:column;gap:12px;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+  <div id="warningOverlay" class="warning-overlay" style="display:none;">
+    <div class="warning-card">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(236,72,153,.15);color:var(--pink);display:grid;place-items:center;font-size:28px;">&#9888;</div>
+      <h2 style="font-size:22px;font-weight:500;">Belum Ada Produk Siap Disimulasikan</h2>
+      <p style="font-family:var(--font-body);font-size:13.5px;color:var(--ink-2);line-height:1.5;">
+        Kamu belum mengunggah atau menyempurnakan file 3D AI. Silakan unggah file 3D kamu terlebih dahulu di modul penyempurnaan.
+      </p>
+      <div style="display:flex;gap:10px;width:100%;margin-top:8px;">
+        <button class="btn-primary" style="background:var(--grad-b);color:#fff;" onclick="window.location.href='sempurna.html'">
+          &larr; Sempurnakan File 3D
+        </button>
+        <button class="btn-primary" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid var(--line);" onclick="useSampleModel()">
+          Gunakan Sample Tugu Jogja
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <header class="header">
+    <a href="index.html" class="brand">
+      <span class="logo"></span> VoxelPress
+    </a>
+    <a href="sempurna.html" class="back-btn">&larr; Penyempurnaan 3D</a>
+  </header>
+
+  <main class="main-wrapper">
+    <div class="model-status-banner">
+      <div class="model-info-left">
+        <div class="model-icon">&#128260;</div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);letter-spacing:0.1em;text-transform:uppercase;">Model Terintegrasi (Active)</div>
+          <div style="font-size:15px;font-weight:600;color:var(--indigo-soft);" id="activeFileName">Loading Model...</div>
+        </div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--green);background:rgba(74,222,128,.1);padding:6px 14px;border-radius:100px;border:1px solid rgba(74,222,128,.2);" id="activeFileStatus">
+        &bull; Watertight Mesh Verified
+      </div>
+    </div>
+
+    <div class="sim-grid">
+      <div class="glass-card col-controls">
+        <div class="eyebrow"><span class="dt"></span>Langkah #2 Simulasi Fisik</div>
+        <h1 class="h-display">Uji Ketahanan <span class="grd">Material Produk</span></h1>
+
+        <div class="param-group">
+          <label class="param-label">Pilih Jenis Material Filamen</label>
+          <select id="materialType" class="select-material">
+            <option value="PLA">PLA (Ekonomis & Ramah Lingkungan)</option>
+            <option value="PETG" selected>PETG (Tahan Cuaca & Liat)</option>
+            <option value="ABS">ABS (Tahan Panas & Benturan Tinggi)</option>
+            <option value="TPU">TPU (Fleksibel & Elastis)</option>
+          </select>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--line-2);margin:2px 0;">
+
+        <div class="param-group">
+          <div class="param-label">
+            <span>Paparan Cuaca / Sinar UV</span>
+            <span class="val" id="valWeather">60 UV</span>
+          </div>
+          <input type="range" id="paramWeather" class="param-slider" min="0" max="100" value="60">
+        </div>
+
+        <div class="param-group">
+          <div class="param-label">
+            <span>Toleransi Suhu Lingkungan</span>
+            <span class="val" id="valTemp">55 °C</span>
+          </div>
+          <input type="range" id="paramTemp" class="param-slider" min="0" max="100" value="55">
+        </div>
+
+        <div class="param-group">
+          <div class="param-label">
+            <span>Kelembaban Udara (Humidity)</span>
+            <span class="val" id="valHumidity">70 %</span>
+          </div>
+          <input type="range" id="paramHumidity" class="param-slider" min="0" max="100" value="70">
+        </div>
+
+        <div class="param-group">
+          <div class="param-label">
+            <span>Uji Kekuatan Benturan (Impact)</span>
+            <span class="val" id="valImpact">65 Joule</span>
+          </div>
+          <input type="range" id="paramImpact" class="param-slider" min="0" max="100" value="65">
+        </div>
+
+        <!-- Ganti tombol cetak lama di simulasi.html dengan tombol ini -->
+        <button class="btn-primary" style="margin-top:8px;" id="btnGoToOrder" onclick="proceedToOrder()">
+        Cetak Produk Sekarang &rarr;
+        </button>
+      </div>
+
+      <div class="glass-card col-chart">
+        <h3 style="font-size:15px;font-weight:500;align-self:flex-start;">
+          Radar Performa & Visualisasi Simulasi
+        </h3>
+        
+        <div class="chart-wrapper">
+          <canvas id="materialSimulationChart"></canvas>
+        </div>
+
+        <div class="product-box-container" id="simBoxContainer">
+          <div class="box-tag">Ruang Simulasi Live 3D</div>
+          <div class="hint-tag">&rlhar; Klik & Drag Objek untuk Memindahkan</div>
+          <canvas id="productCanvas"></canvas>
+        </div>
+
+        <div style="background:rgba(255,255,255,.03);padding:12px 16px;border-radius:12px;width:100%;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;border:1px solid var(--line-2);">
+          <span>Hasil Uji Simulasi:</span>
+          <span style="color:var(--green);" id="recommendationText">Menghitung...</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Import CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+
+  <script>
+    const MATERIAL_PROPERTIES = {
+      PLA: { tempLimit: 55, uvResistance: 0.4, humidityLimit: 60, impactStrength: 0.5, name: 'PLA' },
+      PETG: { tempLimit: 80, uvResistance: 0.85, humidityLimit: 90, impactStrength: 0.8, name: 'PETG' },
+      ABS: { tempLimit: 100, uvResistance: 0.5, humidityLimit: 85, impactStrength: 0.9, name: 'ABS' },
+      TPU: { tempLimit: 75, uvResistance: 0.9, humidityLimit: 95, impactStrength: 1.0, name: 'TPU' }
+    };
+
+    // --- HELPER MEMBACA INDEXEDDB ---
+    function loadFromIndexedDB(callback) {
+      const request = indexedDB.open("VoxelPressDB", 1);
+      request.onsuccess = function(e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("models")) {
+          callback(null);
+          return;
+        }
+        const tx = db.transaction("models", "readonly");
+        const store = tx.objectStore("models");
+        const getReq = store.get("active_model");
+        getReq.onsuccess = function() {
+          callback(getReq.result);
+        };
+      };
+      request.onerror = function() {
+        callback(null);
+      };
+    }
+
+    function saveToIndexedDB(fileData, callback) {
+      const request = indexedDB.open("VoxelPressDB", 1);
+      request.onupgradeneeded = function(e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("models")) {
+          db.createObjectStore("models", { keyPath: "id" });
+        }
+      };
+      request.onsuccess = function(e) {
+        const db = e.target.result;
+        const tx = db.transaction("models", "readwrite");
+        const store = tx.objectStore("models");
+        store.put(fileData);
+        tx.oncomplete = function() {
+          if(callback) callback();
+        };
+      };
+    }
+
+    // --- SETUP THREE.JS ENGINE ---
+    const simBoxContainer = document.getElementById('simBoxContainer');
+    const pCanvas = document.getElementById('productCanvas');
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, simBoxContainer.clientWidth / simBoxContainer.clientHeight, 0.1, 1000);
+    camera.position.set(0, 2, 28);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: pCanvas, alpha: true, antialias: true });
+    renderer.setSize(simBoxContainer.clientWidth, simBoxContainer.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(10, 20, 15);
+    scene.add(dirLight);
+
+    let productGroup = new THREE.Group();
+    scene.add(productGroup);
+
+    const customMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x6366f1, 
+      roughness: 0.3,
+      metalness: 0.1
+    });
+
+    // MEMUAT MODEL DARI INDEXEDDB / STL DATA
+    function loadActiveModelToScene(modelData) {
+      while(productGroup.children.length > 0){ 
+        productGroup.remove(productGroup.children[0]); 
+      }
+      productGroup.position.set(0, 0, 0);
+
+      if (modelData && modelData.stlData && modelData.fileName !== 'Tugu_Jogja_Sample.stl') {
+        try {
+          const loader = new THREE.STLLoader();
+          const geometry = loader.parse(modelData.stlData);
+          
+          geometry.center();
+          geometry.computeVertexNormals();
+
+          // Penyesuaian agar orientasi berdiri tegak
+          geometry.rotateX(-Math.PI / 2);
+
+          const mesh = new THREE.Mesh(geometry, customMaterial);
+          
+          geometry.computeBoundingBox();
+          const box = geometry.boundingBox;
+          const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+          const scale = 12 / (maxDim || 10);
+          mesh.scale.set(scale, scale, scale);
+
+          // Posisikan bagian bawah objek di titik Y=0 (Berdiri di alas)
+          const offsetY = (box.max.y - box.min.y) * scale / 2;
+          mesh.position.y = offsetY;
+
+          productGroup.add(mesh);
+          console.log("Model STL kustom dimuat tegak lurus!");
+        } catch(err) {
+          console.error("Gagal parse STL, menampilkan fallback Tugu Jogja:", err);
+          createDefaultTuguMesh();
+        }
+      } else {
+        createDefaultTuguMesh();
+      }
+    }
+
+    function createDefaultTuguMesh() {
+      const baseGeo = new THREE.BoxGeometry(8, 2, 8);
+      const baseMesh = new THREE.Mesh(baseGeo, customMaterial);
+      baseMesh.position.y = 1;
+      productGroup.add(baseMesh);
+
+      const bodyGeo = new THREE.CylinderGeometry(2, 3.5, 12, 4);
+      const bodyMesh = new THREE.Mesh(bodyGeo, customMaterial);
+      bodyMesh.position.y = 8;
+      bodyMesh.rotation.y = Math.PI / 4;
+      productGroup.add(bodyMesh);
+
+      const topGeo = new THREE.ConeGeometry(1.5, 5, 12);
+      const topMesh = new THREE.Mesh(topGeo, customMaterial);
+      topMesh.position.y = 16.5;
+      productGroup.add(topMesh);
+    }
+
+    // --- INTERAKSI DRAG & DROP POSISI OBJEK 3D ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const plane = new THREE.Plane();
+    const planeNormal = new THREE.Vector3();
+    const intersection = new THREE.Vector3();
+    
+    let isDragging = false;
+    let selectedObject = null;
+    let dragOffset = new THREE.Vector3();
+
+    function getCanvasMousePos(e) {
+      const rect = pCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: ((clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((clientY - rect.top) / rect.height) * 2 + 1
+      };
+    }
+
+    function onPointerDown(e) {
+      const pos = getCanvasMousePos(e);
+      mouse.x = pos.x;
+      mouse.y = pos.y;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(productGroup.children, true);
+
+      if (intersects.length > 0) {
+        isDragging = true;
+        controls.enabled = false; // Matikan rotasi kamera saat menggeser objek
+        selectedObject = productGroup;
+
+        planeNormal.copy(camera.position).normalize();
+        plane.setFromNormalAndCoplanarPoint(planeNormal, selectedObject.position);
+
+        if (raycaster.ray.intersectPlane(plane, intersection)) {
+          dragOffset.copy(intersection).sub(selectedObject.position);
+        }
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging || !selectedObject) return;
+      const pos = getCanvasMousePos(e);
+      mouse.x = pos.x;
+      mouse.y = pos.y;
+
+      raycaster.setFromCamera(mouse, camera);
+      if (raycaster.ray.intersectPlane(plane, intersection)) {
+        selectedObject.position.copy(intersection.sub(dragOffset));
+      }
+    }
+
+    function onPointerUp() {
+      isDragging = false;
+      selectedObject = null;
+      controls.enabled = true; // Aktifkan kembali rotasi kamera
+    }
+
+    pCanvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    pCanvas.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
+
+    // --- ANIMASI BENTURAN (BOUNCE) ---
+    let isBouncing = false;
+    let bounceTime = 0;
+    let bounceEnergy = 0;
+    let initialYBeforeBounce = 0;
+
+    function animate3DProduct() {
+      requestAnimationFrame(animate3DProduct);
+
+      controls.update();
+
+      if (isBouncing) {
+        bounceTime += 0.08;
+        const dropHeight = bounceEnergy * 0.12;
+        const currentY = Math.abs(Math.sin(bounceTime)) * dropHeight * Math.exp(-bounceTime * 0.4);
+        productGroup.position.y = initialYBeforeBounce + currentY;
+
+        if (bounceTime > 6) {
+          isBouncing = false;
+          productGroup.position.y = initialYBeforeBounce;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate3DProduct();
+
+    function triggerImpactBounce(energy) {
+      if (!isBouncing) initialYBeforeBounce = productGroup.position.y;
+      isBouncing = true;
+      bounceTime = 0;
+      bounceEnergy = energy;
+    }
+
+    // --- RADAR CHART ENGINE ---
+    const ctx = document.getElementById('materialSimulationChart').getContext('2d');
+    const materialSimulationChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Ketahanan Cuaca/UV', 'Toleransi Suhu', 'Ketahanan Kelembaban', 'Kekuatan Benturan'],
+        datasets: [{
+          label: 'Skor Kelayakan Cetak (0-100)',
+          data: [0, 0, 0, 0],
+          fill: true,
+          backgroundColor: 'rgba(99, 102, 241, 0.25)',
+          borderColor: '#6366f1',
+          pointBackgroundColor: '#a5b4fc',
+          pointBorderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { color: 'rgba(255, 255, 255, 0.8)', font: { family: 'DM Sans', size: 10 } } } },
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            pointLabels: { color: 'rgba(255, 255, 255, 0.7)', font: { family: 'DM Sans', size: 10 } },
+            ticks: { display: false },
+            suggestedMin: 0,
+            suggestedMax: 100
+          }
+        }
+      }
+    });
+
+    const pWeather = document.getElementById('paramWeather');
+    const pTemp = document.getElementById('paramTemp');
+    const pHumidity = document.getElementById('paramHumidity');
+    const pImpact = document.getElementById('paramImpact');
+    const selectMat = document.getElementById('materialType');
+
+    function calculatePhysicalSimulation() {
+      const mat = MATERIAL_PROPERTIES[selectMat.value];
+      const envUV = parseInt(pWeather.value);
+      const envTemp = parseInt(pTemp.value);
+      const envHumidity = parseInt(pHumidity.value);
+      const envImpact = parseInt(pImpact.value);
+
+      document.getElementById('valWeather').innerText = envUV + ' UV';
+      document.getElementById('valTemp').innerText = envTemp + ' °C';
+      document.getElementById('valHumidity').innerText = envHumidity + ' %';
+      document.getElementById('valImpact').innerText = envImpact + ' Joule';
+
+      let weatherScore = Math.max(10, Math.round(100 - (envUV * (1 - mat.uvResistance))));
+      let tempScore = envTemp > mat.tempLimit ? Math.max(5, Math.round(100 - ((envTemp - mat.tempLimit) * 3.5))) : Math.round(100 - ((envTemp / mat.tempLimit) * 20));
+      let humidityScore = Math.max(15, Math.round(100 - (Math.max(0, envHumidity - mat.humidityLimit) * 1.5)));
+      let impactScore = Math.max(10, Math.round(100 - (envImpact * (1.1 - mat.impactStrength))));
+
+      materialSimulationChart.data.datasets[0].data = [weatherScore, tempScore, humidityScore, impactScore];
+      materialSimulationChart.update();
+
+      const r = Math.min(255, Math.round(envTemp * 2.2));
+      const g = Math.min(255, Math.round(envUV * 2.0));
+      const b = Math.min(255, Math.round(envHumidity * 2.2));
+      const opacity = 0.25;
+
+      simBoxContainer.style.background = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+      simBoxContainer.style.borderColor = `rgb(${r}, ${g}, ${b})`;
+
+      const totalScore = Math.round((weatherScore + tempScore + humidityScore + impactScore) / 4);
+      const recText = document.getElementById('recommendationText');
+
+      if (totalScore >= 75) {
+        recText.innerText = `${mat.name}: Tangguh (Kelayakan: ${totalScore}%)`;
+        recText.style.color = 'var(--green)';
+      } else if (totalScore >= 50) {
+        recText.innerText = `${mat.name}: Aman Indoor (Skor: ${totalScore}%)`;
+        recText.style.color = 'var(--amber)';
+      } else {
+        recText.innerText = `Risiko Rusak (Skor: ${totalScore}%)`;
+        recText.style.color = 'var(--pink)';
+      }
+    }
+
+    // MEMUAT DATA DARI INDEXEDDB SAAT HALAMAN DIBUKA
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFromIndexedDB(function(modelData) {
+        if (!modelData) {
+          document.getElementById('warningOverlay').style.display = 'flex';
+        } else {
+          document.getElementById('warningOverlay').style.display = 'none';
+          document.getElementById('activeFileName').innerText = modelData.fileName + ` (${modelData.vertexCount.toLocaleString()} Polygon)`;
+          
+          loadActiveModelToScene(modelData);
+          calculatePhysicalSimulation();
+        }
+      });
+    });
+
+    function useSampleModel() {
+      const sampleData = {
+        id: "active_model",
+        fileName: 'Tugu_Jogja_Sample.stl',
+        vertexCount: 12480,
+        status: 'Watertight (Siap Cetak)',
+        stlData: null,
+        timestamp: new Date().toISOString()
+      };
+      
+      saveToIndexedDB(sampleData, function() {
+        document.getElementById('warningOverlay').style.display = 'none';
+        document.getElementById('activeFileName').innerText = sampleData.fileName + ` (${sampleData.vertexCount.toLocaleString()} Polygon)`;
+        loadActiveModelToScene(sampleData);
+        calculatePhysicalSimulation();
+      });
+    }
+
+    pWeather.addEventListener('input', calculatePhysicalSimulation);
+    pTemp.addEventListener('input', calculatePhysicalSimulation);
+    pHumidity.addEventListener('input', calculatePhysicalSimulation);
+    selectMat.addEventListener('change', calculatePhysicalSimulation);
+
+    pImpact.addEventListener('input', () => {
+      calculatePhysicalSimulation();
+      triggerImpactBounce(parseInt(pImpact.value));
+    });
+
+    function proceedToOrder() {
+  const activeFileName = document.getElementById('activeFileName').innerText;
+  const selectedMaterial = document.getElementById('materialType').value;
+
+  // 1. Simpan payload data simulasi & token akses
+  const simulationPayload = {
+    fileName: activeFileName,
+    material: selectedMaterial,
+    timestamp: Date.now(),
+    accessGranted: true // Token verifikasi
+  };
+
+  sessionStorage.setItem('voxelpress_sim_data', JSON.stringify(simulationPayload));
+
+  // 2. Navigasi ke halaman pemesanan
+  window.location.href = 'pemesanan.html';
+}
+  </script>
+</body>
+</html>

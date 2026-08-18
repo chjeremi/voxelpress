@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form Pemesanan Cetak 3D - VoxelPress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0e1a;--bg-2:#0d1220;--ink:#ffffff;--ink-2:rgba(255,255,255,.7);--ink-3:rgba(255,255,255,.5);
+  --line:rgba(255,255,255,.1);--line-2:rgba(255,255,255,.06);
+  --glass-bg:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  --glass-border:rgba(255,255,255,.1);--glass-blur:blur(40px);
+  --indigo:#6366f1;--indigo-soft:#a5b4fc;--pink:#ec4899;--cyan:#22d3ee;--green:#4ade80;
+  --grad-a:linear-gradient(135deg,#fff 0%,#a5b4fc 50%,#ec4899 100%);
+  --grad-b:linear-gradient(135deg,#6366f1,#ec4899);
+  --font-sans:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;
+  --r-lg:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 15% 20%,rgba(99,102,241,.22) 0%,transparent 50%),radial-gradient(circle at 85% 80%,rgba(236,72,153,.15) 0%,transparent 50%);z-index:0;pointer-events:none;}
+
+.header{position:fixed;top:0;left:0;right:0;height:80px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:100;background:rgba(10,14,26,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--line-2);}
+.brand{display:flex;align-items:center;gap:11px;font-weight:600;font-size:16px;text-decoration:none;color:#fff}
+.brand .logo{width:28px;height:28px;border-radius:8px;background:var(--grad-b);}
+.back-btn{background:rgba(255,255,255,.06);color:var(--ink);padding:10px 20px;border-radius:100px;font-family:var(--font-body);font-size:13px;font-weight:500;text-decoration:none;border:1px solid var(--glass-border);transition:all .3s;}
+.back-btn:hover{background:rgba(255,255,255,.12)}
+
+.main-wrapper{min-height:100vh;padding:110px 6vmin 50px;display:flex;justify-content:center;align-items:center;position:relative;z-index:1;}
+.glass-card{background:var(--glass-bg);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);border-radius:var(--r-lg);padding:32px;width:100%;max-width:600px;box-shadow:0 30px 60px rgba(0,0,0,.4);}
+.form-group{margin-bottom:18px;display:flex;flex-direction:column;gap:6px;}
+.form-group label{font-family:var(--font-body);font-size:13px;color:var(--ink-2);}
+.form-control{width:100%;padding:12px 16px;border-radius:12px;background:rgba(10,14,26,.8);border:1px solid var(--glass-border);color:var(--ink);font-family:var(--font-body);font-size:14px;outline:none;}
+.form-control:focus{border-color:var(--indigo-soft);}
+.order-summary{background:rgba(255,255,255,.03);border:1px solid var(--line-2);border-radius:14px;padding:16px;margin:20px 0;}
+.order-row{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:13px;margin-bottom:8px;}
+.btn-primary{background:var(--grad-b);color:#fff;padding:14px 28px;border-radius:100px;font-family:var(--font-body);font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;border:none;width:100%;transition:all .3s;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(99,102,241,.4);}
+</style>
+</head>
+<body>
+  <header class="header">
+    <a href="index.html" class="brand"><span class="logo"></span> VoxelPress</a>
+    <a href="simulasi.html" class="back-btn">&larr; Kembali ke Simulasi</a>
+  </header>
+
+  <main class="main-wrapper">
+    <div class="glass-card">
+      <h2 style="font-size:24px;font-weight:600;margin-bottom:6px;">Konfirmasi & Pemesanan</h2>
+      <p style="font-family:var(--font-body);font-size:13px;color:var(--ink-2);margin-bottom:24px;">Kirimkan spesifikasi hasil simulasi ke penyedia jasa cetak.</p>
+
+      <form id="orderForm">
+        <div class="form-group">
+          <label>Nama Pemesan</label>
+          <input type="text" id="customerName" class="form-control" placeholder="Masukkan nama Anda" required>
+        </div>
+
+        <div class="form-group">
+          <label>Material Terpilih (Tersimulasi)</label>
+          <select id="materialSelect" class="form-control" onchange="updatePrice()">
+            <option value="PLA">PLA (Rp 1.500 / gram)</option>
+            <option value="PETG">PETG (Rp 2.000 / gram)</option>
+            <option value="ABS">ABS (Rp 2.500 / gram)</option>
+            <option value="TPU">TPU (Rp 3.500 / gram)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Jumlah Cetak (Qty)</label>
+          <input type="number" id="orderQty" class="form-control" value="1" min="1" onchange="updatePrice()" required>
+        </div>
+
+        <div class="order-summary">
+          <div class="order-row">
+            <span style="color:var(--ink-3);">File Model:</span>
+            <span id="summaryFileName" style="color:var(--cyan);">Memuat...</span>
+          </div>
+          <div class="order-row">
+            <span style="color:var(--ink-3);">Estimasi Berat:</span>
+            <span>45 Gram</span>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--line-2);margin:10px 0;">
+          <div class="order-row" style="font-size:16px;font-weight:700;">
+            <span>Total Biaya:</span>
+            <span id="totalPriceText" style="color:var(--green);">Rp 0</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnSubmit">Kirim Pesanan Sekarang &rarr;</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+  // --- 1. GUARD ACCESS & CHECK SIMULATION DATA ---
+  const rawSimData = sessionStorage.getItem('voxelpress_sim_data');
+  if (!rawSimData) {
+    alert('Akses Ditolak! Anda harus menyelesaikan simulasi terlebih dahulu.');
+    window.location.href = 'simulasi.html';
+  }
+
+  const simData = JSON.parse(rawSimData);
+  if (!simData || !simData.accessGranted) {
+    alert('Data simulasi tidak valid.');
+    window.location.href = 'simulasi.html';
+  }
+
+  // --- 2. INITIALIZE SUPABASE (Gunakan supabaseClient agar tidak bentrok) ---
+  const SUPABASE_URL = 'https://ovcqszjabltbheertlyp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92Y3FzemphYmx0YmhlZXJ0bHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NjU2MzQsImV4cCI6MjEwMjU0MTYzNH0.kzelNFMboz_EyrWfzUmrygwcI5L5SdwYZ-H7-iD4n20';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const PRICE_MAP = { PLA: 1500, PETG: 2000, ABS: 2500, TPU: 3500 };
+  const ESTIMATED_WEIGHT = 45; 
+
+  // Inject data dari simulasi ke UI Pemesanan
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('summaryFileName').innerText = simData.fileName;
+    document.getElementById('materialSelect').value = simData.material || 'PETG';
+    updatePrice();
+  });
+
+  function updatePrice() {
+    const mat = document.getElementById('materialSelect').value;
+    const qty = parseInt(document.getElementById('orderQty').value) || 1;
+    const total = PRICE_MAP[mat] * ESTIMATED_WEIGHT * qty;
+    document.getElementById('totalPriceText').innerText = 'Rp ' + total.toLocaleString('id-ID');
+    return total;
+  }
+
+  document.getElementById('orderForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmit');
+  btn.innerText = 'Mengirim Pesanan...';
+  btn.disabled = true;
+
+  const orderData = {
+    customer_name: document.getElementById('customerName').value,
+    file_name: document.getElementById('summaryFileName').innerText,
+    material: document.getElementById('materialSelect').value,
+    quantity: parseInt(document.getElementById('orderQty').value),
+    total_price: updatePrice(),
+    status: 'Pending'
+  };
+
+  // Kirim data ke Supabase
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .insert([orderData])
+    .select(); // Tambahkan .select() agar Supabase mengembalikan ID data yang baru dibuat
+
+  if (error) {
+    alert('Gagal mengirim pesanan: ' + error.message);
+    btn.innerText = 'Kirim Pesanan Sekarang \u2192';
+    btn.disabled = false;
+  } else {
+    // Simpan hasil response pesanan ke sessionStorage untuk dibaca di status-pesanan.html
+    sessionStorage.setItem('voxelpress_last_order', JSON.stringify(data[0]));
+    sessionStorage.removeItem('voxelpress_sim_data');
+    
+    // Arahkan ke halaman status pesanan
+    window.location.href = 'status-pesanan.html';
+  }
+});
+</script>
+</body>
+</html>
